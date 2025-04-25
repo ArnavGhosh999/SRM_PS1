@@ -510,14 +510,7 @@ def run_xgboost_pipeline(train_files, test_file):
 if __name__ == "__main__":
   
     train_files = [
-        "CR.csv",
-        "ECOR.csv",
-        "NCR.csv",
-        "NER.csv",
-        "NFR.csv",
-        "NR.csv",
-        "SCR.csv",
-        "WCR.csv"
+        "/media/umeshgjh/New Volume/Energy7 Internship/Merge thing n check/merged_data_100Hz.csv"
     ]
     test_file = "Test - Zone.csv"
 
