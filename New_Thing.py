@@ -14,6 +14,7 @@ from typing import Dict, List, Tuple, Optional, Union
 from dataclasses import dataclass, asdict
 from tqdm.auto import tqdm
 import joblib
+import os
 
 # Advanced ML/DL libraries
 import torch
@@ -22,7 +23,8 @@ import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 from sklearn.preprocessing import StandardScaler, MinMaxScaler, RobustScaler
 from sklearn.decomposition import PCA, FastICA
-from sklearn.manifold import TSNE, UMAP
+from sklearn.manifold import TSNE
+from umap import UMAP
 from sklearn.cluster import DBSCAN, KMeans
 from sklearn.ensemble import IsolationForest, RandomForestClassifier
 from sklearn.svm import OneClassSVM
@@ -83,6 +85,9 @@ class AdvancedLogger:
     """Enhanced logging system with multiple handlers"""
     
     def __init__(self, name: str = "AnomalyDetection"):
+        import os
+        os.makedirs('logs', exist_ok=True)
+        
         self.logger = logging.getLogger(name)
         self.logger.setLevel(logging.INFO)
         
@@ -1106,7 +1111,7 @@ def main():
     pipeline = ModernAnomalyDetectionPipeline(config)
     
     # Run pipeline
-    dataset_path = "Dataset/merged_data_20Hz.csv"
+    dataset_path = "processed_data/merged_data_20Hz.csv"
     results, df, features = pipeline.run_complete_pipeline(dataset_path)
     
     return results, df, features
