@@ -39,14 +39,19 @@ def safe_plot(func):
             return None
     return wrapper
 
-def load_and_format_20hz_data(dataset_path):
-    """Load and properly format the 20Hz dataset with comma-separated values"""
+def load_and_format_20hz_data(dataset_path, sample_fraction=1.0):
+    """Load and properly format the 20Hz dataset with comma-separated values, with optional row sampling"""
     print(f"Loading and formatting 20Hz data from: {dataset_path}")
     
     # Load the raw CSV
     df_raw = pd.read_csv(dataset_path)
     print(f"Raw dataset shape: {df_raw.shape}")
     print(f"Columns: {list(df_raw.columns)}")
+    
+    # Sample a fraction of the data if needed
+    if sample_fraction < 1.0:
+        df_raw = df_raw.sample(frac=sample_fraction, random_state=42).reset_index(drop=True)
+        print(f"Sampled dataset shape: {df_raw.shape}")
     
     # Initialize lists to store formatted data
     formatted_data = []
@@ -814,7 +819,7 @@ def main():
     print("STEP 1: DATA FORMATTING AND PREPROCESSING")
     print("="*50)
     dataset_path = "/home/understressengineer/programming/SRM_PS1/processed_data/merged_data_20Hz.csv"
-    df_formatted = load_and_format_20hz_data(dataset_path)
+    df_formatted = load_and_format_20hz_data(dataset_path, sample_fraction=0.5)
     
     # Step 2: Analyze signal characteristics
     print("\n" + "="*50)
@@ -880,7 +885,7 @@ def main():
     print(f"  - All results saved with timestamp: {current_time}")
     print("="*70)
     
-    return df_formatted, stats, all_results
+    return df_formatted, stats, results
 
 if __name__ == "__main__":
     df_formatted, stats, results = main()
