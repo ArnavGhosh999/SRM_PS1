@@ -536,56 +536,62 @@ class ModernAnomalyDetectionPipeline:
         for directory in directories:
             Path(directory).mkdir(parents=True, exist_ok=True)
     
-    def load_and_preprocess_data(self, dataset_path: str, chunk_size: int = 1000) -> pd.DataFrame:
-        """Load and preprocess the 20Hz dataset in chunks to save memory"""
+    def load_and_preprocess_data(self, dataset_path: str) -> pd.DataFrame:
+        """Load and preprocess the 20Hz dataset"""
         self.logger.info(f"Loading dataset from: {dataset_path}")
-        processed_chunks = []
-        for df_raw in pd.read_csv(dataset_path, chunksize=chunk_size):
-            formatted_data = []
-            for idx, row in df_raw.iterrows():
-                try:
-                    # Extract and clean comma-separated values
-                    signals = {}
-                    for col in ['A Current', 'A Voltage', 'B Current', 'B Voltage']:
-                        signal_str = str(row[col]).strip('"')
-                        values = [float(x.strip()) for x in signal_str.split(',') if x.strip()]
-                        signals[col.lower().replace(' ', '_')] = values
-                    
-                    # Find minimum length
-                    min_length = min(len(values) for values in signals.values())
-                    
-                    if min_length > 0:
-                        # Create time series data points
-                        for i in range(min_length):
-                            formatted_row = {
-                                'record_id': idx,
-                                'time_point': i,
-                                'site_name': row['Site Name'],
-                                'machine_name': row['Point Machine Name'],
-                                'direction': row['Direction'],
-                                'timestamp': row['Time'],
-                                'a_current': signals['a_current'][i],
-                                'a_voltage': signals['a_voltage'][i],
-                                'b_current': signals['b_current'][i],
-                                'b_voltage': signals['b_voltage'][i],
-                                'type_a': row['Type of A'],
-                                'type_b': row['Type of B'],
-                                'polling_a': row['Polling of A'],
-                                'polling_b': row['Polling of B'],
-                                'source_dataset': row['source_dataset']
-                            }
-                            formatted_data.append(formatted_row)
-                            
-                except Exception as e:
-                    self.logger.error(f"Error processing row {idx}: {str(e)}")
-                    continue
-            
-            df_processed = pd.DataFrame(formatted_data)
-            processed_chunks.append(df_processed)
-        df_final = pd.concat(processed_chunks, ignore_index=True)
-        self.logger.info(f"Processed dataset shape: {df_final.shape}")
-        df_final.to_csv('data/processed/formatted_data.csv', index=False)
-        return df_final
+        
+        # Load raw data
+        df_raw = pd.read_csv(dataset_path)
+        self.logger.info(f"Raw dataset shape: {df_raw.shape}")
+        
+        # Process comma-separated values
+        formatted_data = []
+        
+        for idx, row in tqdm(df_raw.iterrows(), total=len(df_raw), desc="Processing data"):
+            try:
+                # Extract and clean comma-separated values
+                signals = {}
+                for col in ['A Current', 'A Voltage', 'B Current', 'B Voltage']:
+                    signal_str = str(row[col]).strip('"')
+                    values = [float(x.strip()) for x in signal_str.split(',') if x.strip()]
+                    signals[col.lower().replace(' ', '_')] = values
+                
+                # Find minimum length
+                min_length = min(len(values) for values in signals.values())
+                
+                if min_length > 0:
+                    # Create time series data points
+                    for i in range(min_length):
+                        formatted_row = {
+                            'record_id': idx,
+                            'time_point': i,
+                            'site_name': row['Site Name'],
+                            'machine_name': row['Point Machine Name'],
+                            'direction': row['Direction'],
+                            'timestamp': row['Time'],
+                            'a_current': signals['a_current'][i],
+                            'a_voltage': signals['a_voltage'][i],
+                            'b_current': signals['b_current'][i],
+                            'b_voltage': signals['b_voltage'][i],
+                            'type_a': row['Type of A'],
+                            'type_b': row['Type of B'],
+                            'polling_a': row['Polling of A'],
+                            'polling_b': row['Polling of B'],
+                            'source_dataset': row['source_dataset']
+                        }
+                        formatted_data.append(formatted_row)
+                        
+            except Exception as e:
+                self.logger.error(f"Error processing row {idx}: {str(e)}")
+                continue
+        
+        df_processed = pd.DataFrame(formatted_data)
+        self.logger.info(f"Processed dataset shape: {df_processed.shape}")
+        
+        # Save processed data
+        df_processed.to_csv('data/processed/formatted_data.csv', index=False)
+        
+        return df_processed
     
     def extract_windowed_features(self, df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray, List[str]]:
         """Extract features using sliding window approach"""
@@ -650,18 +656,23 @@ class ModernAnomalyDetectionPipeline:
         """Deep learning based anomaly detection"""
         
         self.logger.info("Running deep learning anomaly detection...")
+        
+        # Prepare data for deep learning
         scaler = MinMaxScaler()
         features_scaled = scaler.fit_transform(features)
+        
+        # Reshape for sequence modeling
         seq_length = min(50, features.shape[0] // 10)
         if features.shape[0] < seq_length:
             self.logger.warning("Not enough data for deep learning models")
             return {}
-        # Sample only a subset of sequences to save memory
-        max_sequences = 1000
-        indices = np.arange(len(features_scaled) - seq_length + 1)
-        if len(indices) > max_sequences:
-            indices = np.random.choice(indices, max_sequences, replace=False)
-        sequences = np.array([features_scaled[i:i + seq_length] for i in indices])
+        
+        # Create sequences
+        sequences = []
+        for i in range(len(features_scaled) - seq_length + 1):
+            sequences.append(features_scaled[i:i + seq_length])
+        
+        sequences = np.array(sequences)
         
         results = {}
         
