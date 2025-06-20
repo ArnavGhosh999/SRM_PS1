@@ -1,0 +1,33 @@
+numpy>=1.23
+pandas>=1.5
+matplotlib>=3.7
+seaborn>=0.12
+plotly>=5.15
+tqdm>=4.65
+joblib>=1.2
+torch>=2.0
+scikit-learn>=1.2
+xgboost>=2.0
+lightgbm>=4.0
+catboost>=1.2
+scipy>=1.10
+statsmodels>=0.14
+PyWavelets>=1.4
+antropy>=0.1.6
+sktime>=0.24
+pyod>=1.1
+# For interactive plots and dashboards
+kaleido>=0.2
+# For logging and system utilities
+psutil>=5.9
+# For Jupyter notebook support (optional)
+notebook>=7.0
+ipython>=8.0
+# For compatibility with sktime panel transformers
+numba>=0.57
+# For pandas string parsing
+python-dateutil>=2.8
+# For file and path utilities
+pathlib
+# For progress bars in notebooks
+ipywidgets>=8.0
